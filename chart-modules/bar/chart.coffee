@@ -1,3 +1,4 @@
+# bar
 define ['../common/property'], (Property) ->
   () ->
     # configs
@@ -41,7 +42,7 @@ define ['../common/property'], (Property) ->
         y.range([height,0])
 
       margin: new Property (value) ->
-        margin = value
+        margin = _.extend margin, value
         properties.width.reset()
         properties.height.reset()
 
