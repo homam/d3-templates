@@ -2,7 +2,7 @@
 (function() {
   define(['../common/property'], function(Property) {
     return function() {
-      var chart, devMap, dispatch, height, margin, nameMap, properties, tooltip, valueMap, width, x, xAxis, y, yAxis;
+      var chart, devMap, dispatch, height, margin, nameMap, properties, tooltip, valueMap, width, x, xAxis, xl, y, yAxis;
 
       margin = {
         top: 20,
@@ -14,6 +14,7 @@
       height = 300;
       x = d3.scale.ordinal();
       y = d3.scale.linear();
+      xl = d3.scale.linear();
       xAxis = d3.svg.axis().scale(x).orient('bottom');
       yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','));
       nameMap = function(d) {
@@ -29,6 +30,7 @@
         width: new Property(function(value) {
           width = value - margin.left - margin.right;
           x.rangeRoundBands([0, width], .1);
+          xl.range([0, width]);
           return yAxis.tickSize(-width, 0, 0);
         }),
         height: new Property(function(value) {
@@ -51,13 +53,14 @@
         }),
         tooltip: new Property(function(value) {
           return tooltip = value;
-        })
+        }),
+        drawExpectedValue: new Property
       };
       properties.width.set(width);
       properties.height.set(height);
       chart = function(selection) {
         return selection.each(function(data) {
-          var $devG, $devGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, keys;
+          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, distribution, expectedValue, keys, total;
 
           $selection = d3.select(this);
           $svg = $selection.selectAll('svg').data([data]);
@@ -70,6 +73,8 @@
           $yAxis = $svg.select('.y.axis');
           keys = _.flatten(data.map(nameMap));
           x.domain(keys);
+          xl.domain(d3.extent(keys));
+          console.log(d3.extent(keys));
           y.domain([0, d3.max(data.map(valueMap))]);
           $main = $g.selectAll('g.main').data(data);
           $mainEnter = $main.enter().append('g').attr('class', 'main');
@@ -89,6 +94,27 @@
           }).style('fill', function(d, i) {
             return '#ff7f0e';
           });
+          if (properties.drawExpectedValue.get()) {
+            total = _(data).map(function(d) {
+              return d.value;
+            }).reduce(function(a, b) {
+              return a + b;
+            });
+            distribution = _(data).map(function(d) {
+              return d.name * d.value / total;
+            });
+            expectedValue = distribution.reduce(function(a, b) {
+              return a + b;
+            });
+            expectedValue = 3;
+            console.log(expectedValue, xl(expectedValue));
+            $expGEnter = $gEnter.append('g').attr('class', 'exp');
+            $expG = $g.select('g.exp').transition().duration(200).attr('transform', function(d) {
+              return "translate(" + (xl(expectedValue)) + ",0)";
+            });
+            $expGEnter.append('line').attr('class', 'exp');
+            $expG.select('line.exp').transition().duration(200).attr('x1', xl(expectedValue)).attr('x2', xl(expectedValue)).attr('y1', 0).attr('y2', height);
+          }
           if (!!devMap) {
             $devGEnter = $mainEnter.append('g').attr('class', 'dev');
             $devG = $main.select('g.dev').transition().duration(200).attr('transform', function(d) {

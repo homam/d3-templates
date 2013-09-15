@@ -14,6 +14,8 @@ define ['../common/property'], (Property) ->
     x = d3.scale.ordinal()
     y = d3.scale.linear()
 
+    xl = d3.scale.linear()
+
     xAxis = d3.svg.axis().scale(x).orient('bottom')
     yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','))
 
@@ -35,6 +37,7 @@ define ['../common/property'], (Property) ->
       width: new Property (value) ->
         width = value - margin.left-margin.right
         x.rangeRoundBands([0,width], .1)
+        xl.range([0,width])
         yAxis.tickSize(-width,0,0)
 
       height: new Property (value) ->
@@ -53,6 +56,8 @@ define ['../common/property'], (Property) ->
       devs : new Property (value) -> devMap = value
 
       tooltip : new Property (value) -> tooltip = value
+
+      drawExpectedValue: new Property
     }
 
     properties.width.set(width)
@@ -80,6 +85,8 @@ define ['../common/property'], (Property) ->
 
         keys = _.flatten data.map nameMap
         x.domain(keys)
+        xl.domain d3.extent keys
+        console.log d3.extent keys
         y.domain([0, d3.max data.map valueMap ])
 
         $main = $g.selectAll('g.main').data(data)
@@ -97,6 +104,30 @@ define ['../common/property'], (Property) ->
         .attr('y', (d) -> y(valueMap(d)))
         .attr('height', (d)-> height-y(valueMap(d)))
         .style('fill', (d,i)-> '#ff7f0e')
+
+
+        if properties.drawExpectedValue.get()
+          total = _(data).map((d) -> d.value).reduce (a,b) -> a+b
+          distribution = _(data).map((d) -> d.name * d.value/total)
+          expectedValue = distribution.reduce (a,b) -> a+b
+
+          expectedValue = 3
+
+          console.log expectedValue, xl(expectedValue)
+
+          $expGEnter = $gEnter.append('g').attr('class','exp')
+          $expG = $g.select('g.exp')
+          .transition().duration(200)
+          .attr('transform', (d) -> "translate(#{xl(expectedValue)},0)")
+
+          $expGEnter.append('line').attr('class', 'exp')
+          $expG.select('line.exp')
+          .transition().duration(200)
+          .attr('x1', xl(expectedValue)).attr('x2', xl(expectedValue))
+          .attr('y1', 0).attr('y2', height)
+
+
+
 
         # deviation lines
         if !!devMap
