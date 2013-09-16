@@ -56,10 +56,10 @@ define ['../common/property'], (Property) ->
 
       tooltip : new Property (value) -> tooltip = value
 
-    # numebr, used in histograms
+      # numebr, used in histograms
       drawExpectedValue: new Property
 
-    # number, used in histograms
+      # number, used in histograms
       coalescing: new Property
     }
 
@@ -173,6 +173,9 @@ define ['../common/property'], (Property) ->
 
 
         $main.exit().select('rect').attr('y', 0).attr('height', 0)
+
+
+
 
         $xAxis.transition().duration(200).call(xAxis)
         .selectAll("text")
