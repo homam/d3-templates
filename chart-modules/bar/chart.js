@@ -2,7 +2,7 @@
 (function() {
   define(['../common/property'], function(Property) {
     return function() {
-      var devMap, height, margin, nameMap, tooltip, valueMap, width, x, xAxis, y, yAxis;
+      var chart, devMap, dispatch, height, margin, nameMap, properties, tooltip, valueMap, width, x, xAxis, y, yAxis;
       margin = {
         top: 20,
         right: 0,
@@ -22,146 +22,144 @@
         return d.value;
       };
       devMap = null;
-      return tooltip = function() {
-        var chart, dispatch, properties;
-        dispatch = d3.dispatch('mouseover', 'mouseout');
-        properties = {
-          width: new Property(function(value) {
-            width = value - margin.left - margin.right;
-            x.rangeRoundBands([0, width], .1);
-            return yAxis.tickSize(-width, 0, 0);
-          }),
-          height: new Property(function(value) {
-            height = value - margin.top - margin.bottom;
-            return y.range([height, 0]);
-          }),
-          margin: new Property(function(value) {
-            margin = _.extend(margin, value);
-            properties.width.reset();
-            return properties.height.reset();
-          }),
-          names: new Property(function(value) {
-            return nameMap = value;
-          }),
-          values: new Property(function(value) {
-            return valueMap = value;
-          }),
-          devs: new Property(function(value) {
-            return devMap = value;
-          }),
-          tooltip: new Property(function(value) {
-            return tooltip = value;
-          }),
-          drawExpectedValue: new Property,
-          coalescing: new Property
-        };
-        properties.width.set(width);
-        properties.height.set(height);
-        chart = function(selection) {
-          return selection.each(function(data) {
-            var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, chartData, coalescing, distribution, expX, expectedValue, keys, total;
-            $selection = d3.select(this);
-            chartData = data;
-            coalescing = properties.coalescing.get();
-            if (!!coalescing) {
-              chartData = _(data).foldl((function(acc, a, i) {
-                if (i <= coalescing) {
-                  acc.push({
-                    name: a.name,
-                    value: a.value
-                  });
-                } else {
-                  acc[coalescing].value += a.value;
-                }
-                return acc;
-              }), []);
-            }
-            $svg = $selection.selectAll('svg').data([chartData]);
-            $gEnter = $svg.enter().append('svg').append('g');
-            $svg.attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom);
-            $g = $svg.select('g').attr('transform', "translate(" + margin.left + "," + margin.top + ")");
-            $gEnter.append('g').attr('class', 'x axis');
-            $xAxis = $svg.select('.x.axis').attr("transform", "translate(0," + height + ")");
-            $gEnter.append('g').attr('class', 'y axis');
-            $yAxis = $svg.select('.y.axis');
-            keys = _.flatten(chartData.map(nameMap));
-            x.domain(keys);
-            y.domain([0, d3.max(chartData.map(valueMap))]);
-            $main = $g.selectAll('g.main').data(chartData);
-            $mainEnter = $main.enter().append('g').attr('class', 'main');
-            $main.transition().duration(200);
-            $mainEnter.append('rect').on('mouseover', function(d) {
-              return dispatch.mouseover(d);
-            }).on('mouseout', function(d) {
-              return dispatch.mouseout(d);
-            }).call(tooltip);
-            $rect = $main.select('rect');
-            $rect.transition().duration(200).attr('width', x.rangeBand()).attr('x', function(d) {
-              return x(nameMap(d));
-            }).attr('y', function(d) {
-              return y(valueMap(d));
-            }).attr('height', function(d) {
-              return height - y(valueMap(d));
-            }).style('fill', function(d, i) {
-              return '#ff7f0e';
-            });
-            if (properties.drawExpectedValue.get()) {
-              total = _(data).map(function(d) {
-                return d.value;
-              }).reduce(function(a, b) {
-                return a + b;
-              });
-              distribution = _(data).map(function(d) {
-                return d.name * d.value / total;
-              });
-              expectedValue = distribution.reduce(function(a, b) {
-                return a + b;
-              });
-              $expGEnter = $gEnter.append('g').attr('class', 'exp');
-              $expG = $g.select('g.exp').transition().duration(200);
-              $expGEnter.append('line').attr('class', 'exp');
-              expX = x(Math.floor(expectedValue)) + (expectedValue - Math.floor(expectedValue)) * x.rangeBand();
-              $expG.select('line.exp').transition().duration(200).attr('x1', expX).attr('x2', expX).attr('y1', 0).attr('y2', height);
-            }
-            if (!!devMap) {
-              $devGEnter = $mainEnter.append('g').attr('class', 'dev');
-              $devG = $main.select('g.dev').transition().duration(200).attr('transform', function(d) {
-                return 'translate(0,' + (-height + y(valueMap(d)) - (-height + y(devMap(d))) / 2) + ')';
-              });
-              $devGEnter.append('line').attr('class', 'dev up');
-              $devG.select('line.dev.up').transition().duration(200).attr('x1', _.compose(x, nameMap)).attr('x2', function(d) {
-                return _.compose(x, nameMap)(d) + x.rangeBand();
-              }).attr('y1', _.compose(y, devMap)).attr('y2', _.compose(y, devMap));
-              $devGEnter.append('line').attr('class', 'dev low');
-              $devG.select('line.dev.low').transition().duration(200).attr('x1', _.compose(x, nameMap)).attr('x2', function(d) {
-                return _.compose(x, nameMap)(d) + x.rangeBand();
-              }).attr('y1', y(0)).attr('y2', y(0));
-              $devGEnter.append('rect').attr('class', 'dev');
-              $devG.select('rect.dev').transition().duration(200).attr('width', x.rangeBand() * .25).attr('x', function(d) {
-                return x(nameMap(d)) + x.rangeBand() * .375;
-              }).attr('y', _.compose(y, devMap)).attr('height', function(d) {
-                return height - (_.compose(y, devMap))(d);
-              });
-            }
-            $main.exit().select('rect').attr('y', 0).attr('height', 0);
-            $xAxis.transition().duration(200).call(xAxis).selectAll("text").text(function(d) {
-              if (!!coalescing && d >= coalescing) {
-                return d + "+";
-              } else {
-                return d;
-              }
-            });
-            $yAxis.transition().duration(200).call(yAxis);
-            return null;
-          });
-        };
-        null;
-        chart = Property.expose(chart, properties);
-        chart.mouseover = function(handler) {
-          return dispatch.on('mouseover', handler);
-        };
-        return chart;
+      tooltip = function() {};
+      dispatch = d3.dispatch('mouseover', 'mouseout');
+      properties = {
+        width: new Property(function(value) {
+          width = value - margin.left - margin.right;
+          x.rangeRoundBands([0, width], .1);
+          return yAxis.tickSize(-width, 0, 0);
+        }),
+        height: new Property(function(value) {
+          height = value - margin.top - margin.bottom;
+          return y.range([height, 0]);
+        }),
+        margin: new Property(function(value) {
+          margin = _.extend(margin, value);
+          properties.width.reset();
+          return properties.height.reset();
+        }),
+        names: new Property(function(value) {
+          return nameMap = value;
+        }),
+        values: new Property(function(value) {
+          return valueMap = value;
+        }),
+        devs: new Property(function(value) {
+          return devMap = value;
+        }),
+        tooltip: new Property(function(value) {
+          return tooltip = value;
+        }),
+        drawExpectedValue: new Property,
+        coalescing: new Property
       };
+      properties.width.set(width);
+      properties.height.set(height);
+      chart = function(selection) {
+        return selection.each(function(data) {
+          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, chartData, coalescing, distribution, expX, expectedValue, keys, total;
+          $selection = d3.select(this);
+          chartData = data;
+          coalescing = properties.coalescing.get();
+          if (!!coalescing) {
+            chartData = _(data).foldl((function(acc, a, i) {
+              if (i <= coalescing) {
+                acc.push({
+                  name: a.name,
+                  value: a.value
+                });
+              } else {
+                acc[coalescing].value += a.value;
+              }
+              return acc;
+            }), []);
+          }
+          $svg = $selection.selectAll('svg').data([chartData]);
+          $gEnter = $svg.enter().append('svg').append('g');
+          $svg.attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom);
+          $g = $svg.select('g').attr('transform', "translate(" + margin.left + "," + margin.top + ")");
+          $gEnter.append('g').attr('class', 'x axis');
+          $xAxis = $svg.select('.x.axis').attr("transform", "translate(0," + height + ")");
+          $gEnter.append('g').attr('class', 'y axis');
+          $yAxis = $svg.select('.y.axis');
+          keys = _.flatten(chartData.map(nameMap));
+          x.domain(keys);
+          y.domain([0, d3.max(chartData.map(valueMap))]);
+          $main = $g.selectAll('g.main').data(chartData);
+          $mainEnter = $main.enter().append('g').attr('class', 'main');
+          $main.transition().duration(200);
+          $mainEnter.append('rect').on('mouseover', function(d) {
+            return dispatch.mouseover(d);
+          }).on('mouseout', function(d) {
+            return dispatch.mouseout(d);
+          }).call(tooltip);
+          $rect = $main.select('rect');
+          $rect.transition().duration(200).attr('width', x.rangeBand()).attr('x', function(d) {
+            return x(nameMap(d));
+          }).attr('y', function(d) {
+            return y(valueMap(d));
+          }).attr('height', function(d) {
+            return height - y(valueMap(d));
+          }).style('fill', function(d, i) {
+            return '#ff7f0e';
+          });
+          if (properties.drawExpectedValue.get()) {
+            total = _(data).map(function(d) {
+              return d.value;
+            }).reduce(function(a, b) {
+              return a + b;
+            });
+            distribution = _(data).map(function(d) {
+              return d.name * d.value / total;
+            });
+            expectedValue = distribution.reduce(function(a, b) {
+              return a + b;
+            });
+            $expGEnter = $gEnter.append('g').attr('class', 'exp');
+            $expG = $g.select('g.exp').transition().duration(200);
+            $expGEnter.append('line').attr('class', 'exp');
+            expX = x(Math.floor(expectedValue)) + (expectedValue - Math.floor(expectedValue)) * x.rangeBand();
+            $expG.select('line.exp').transition().duration(200).attr('x1', expX).attr('x2', expX).attr('y1', 0).attr('y2', height);
+          }
+          if (!!devMap) {
+            $devGEnter = $mainEnter.append('g').attr('class', 'dev');
+            $devG = $main.select('g.dev').transition().duration(200).attr('transform', function(d) {
+              return 'translate(0,' + (-height + y(valueMap(d)) - (-height + y(devMap(d))) / 2) + ')';
+            });
+            $devGEnter.append('line').attr('class', 'dev up');
+            $devG.select('line.dev.up').transition().duration(200).attr('x1', _.compose(x, nameMap)).attr('x2', function(d) {
+              return _.compose(x, nameMap)(d) + x.rangeBand();
+            }).attr('y1', _.compose(y, devMap)).attr('y2', _.compose(y, devMap));
+            $devGEnter.append('line').attr('class', 'dev low');
+            $devG.select('line.dev.low').transition().duration(200).attr('x1', _.compose(x, nameMap)).attr('x2', function(d) {
+              return _.compose(x, nameMap)(d) + x.rangeBand();
+            }).attr('y1', y(0)).attr('y2', y(0));
+            $devGEnter.append('rect').attr('class', 'dev');
+            $devG.select('rect.dev').transition().duration(200).attr('width', x.rangeBand() * .25).attr('x', function(d) {
+              return x(nameMap(d)) + x.rangeBand() * .375;
+            }).attr('y', _.compose(y, devMap)).attr('height', function(d) {
+              return height - (_.compose(y, devMap))(d);
+            });
+          }
+          $main.exit().select('rect').attr('y', 0).attr('height', 0);
+          $xAxis.transition().duration(200).call(xAxis).selectAll("text").text(function(d) {
+            if (!!coalescing && d >= coalescing) {
+              return d + "+";
+            } else {
+              return d;
+            }
+          });
+          $yAxis.transition().duration(200).call(yAxis);
+          return null;
+        });
+      };
+      null;
+      chart = Property.expose(chart, properties);
+      chart.mouseover = function(handler) {
+        return dispatch.on('mouseover', handler);
+      };
+      return chart;
     };
   });
 
