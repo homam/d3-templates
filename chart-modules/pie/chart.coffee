@@ -75,8 +75,8 @@ define ['../common/property'], (Property) ->
           "arc " + nameMap(d.data));
 
         $arcEnter.append("path")
-        $arc.select('path').attr("d", arc)
-        .style("fill", (d) -> color(nameMap(d.data)));
+        $arc.select('path').transition().duration(500).attr("d", arc)
+        $arc.select('path').style("fill", (d) -> color(nameMap(d.data)));
 
 
         $arcEnter.append("text")
