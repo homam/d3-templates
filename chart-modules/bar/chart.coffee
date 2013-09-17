@@ -75,13 +75,29 @@ define ['../common/property'], (Property) ->
 
         # in histograms
         coalescing = properties.coalescing.get()
+
+        statistics = null
+        if !!coalescing or properties.drawExpectedValue.get()
+          total = _(data).map((d) -> d.value).reduce (a,b) -> a+b
+          distribution = _(data).map((d) -> d.name * (d.value/total))
+          expectedValue = distribution.reduce (a,b) -> a+b
+          variance = data.map((d) -> Math.pow((d.name-expectedValue),2)*(d.value/total)).reduce((a,b)->a+b)
+          stnDev = Math.sqrt variance
+
+          statistics = {
+            expectedValue: expectedValue
+            stnDev: stnDev
+          }
+
+
         if !!coalescing
+          if coalescing < (expectedValue + stnDev)
+            coalescing = Math.ceil expectedValue + stnDev
           chartData = _(data).foldl ((acc, a, i) ->
             if i <= coalescing
               acc.push({name: a.name, value: a.value})
             else
               acc[coalescing].value += a.value
-            #acc[coalescing].name = coalescing + "+"
             return acc), []
 
 
@@ -123,22 +139,35 @@ define ['../common/property'], (Property) ->
 
         # in histograms
         if properties.drawExpectedValue.get()
-          total = _(data).map((d) -> d.value).reduce (a,b) -> a+b
-          distribution = _(data).map((d) -> d.name * d.value/total)
-          expectedValue = distribution.reduce (a,b) -> a+b
+          expectedValue = statistics.expectedValue
+          stnDev = statistics.stnDev
 
           $expGEnter = $gEnter.append('g').attr('class','exp')
           $expG = $g.select('g.exp')
           .transition().duration(200)
 
-          $expGEnter.append('line').attr('class', 'exp')
 
-          expX = x(Math.floor expectedValue) + (expectedValue - Math.floor(expectedValue)) * x.rangeBand()
+          realX = (value) ->
+            min = _.min(data.map (d) -> d.name)
+            if value < min
+              x(min) - x(-1 * Math.floor value+min) - (value + Math.floor(value+min)) * x.rangeBand()
+            else
+              x(Math.floor value) + (value - Math.floor(value)) * x.rangeBand()
 
-          $expG.select('line.exp')
-          .transition().duration(200)
-          .attr('x1', expX).attr('x2', expX)
-          .attr('y1', 0).attr('y2', height)
+          addVerticalLine = (value, className) ->
+            lineX = realX value
+            $expGEnter.append('line').attr('class', className)
+            $expG.select('line.' + className).transition().duration(200)
+            .attr('x1', lineX).attr('x2', lineX)
+            .attr('y1', 0).attr('y2', height)
+
+
+          addVerticalLine expectedValue, "exp"
+          addVerticalLine (expectedValue - stnDev), "leftStnDev"
+          addVerticalLine (expectedValue + stnDev), "rightStnDev"
+
+          console.log expectedValue,(expectedValue - stnDev), (expectedValue + stnDev)
+          console.log realX(expectedValue),realX(expectedValue - stnDev), realX(expectedValue + stnDev)
 
 
 

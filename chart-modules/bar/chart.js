@@ -58,11 +58,38 @@
       properties.height.set(height);
       chart = function(selection) {
         return selection.each(function(data) {
-          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, chartData, coalescing, distribution, expX, expectedValue, keys, total;
+          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, addVerticalLine, chartData, coalescing, distribution, expectedValue, keys, realX, statistics, stnDev, total, variance;
           $selection = d3.select(this);
           chartData = data;
           coalescing = properties.coalescing.get();
+          statistics = null;
+          if (!!coalescing || properties.drawExpectedValue.get()) {
+            total = _(data).map(function(d) {
+              return d.value;
+            }).reduce(function(a, b) {
+              return a + b;
+            });
+            distribution = _(data).map(function(d) {
+              return d.name * (d.value / total);
+            });
+            expectedValue = distribution.reduce(function(a, b) {
+              return a + b;
+            });
+            variance = data.map(function(d) {
+              return Math.pow(d.name - expectedValue, 2) * (d.value / total);
+            }).reduce(function(a, b) {
+              return a + b;
+            });
+            stnDev = Math.sqrt(variance);
+            statistics = {
+              expectedValue: expectedValue,
+              stnDev: stnDev
+            };
+          }
           if (!!coalescing) {
+            if (coalescing < (expectedValue + stnDev)) {
+              coalescing = Math.ceil(expectedValue + stnDev);
+            }
             chartData = _(data).foldl((function(acc, a, i) {
               if (i <= coalescing) {
                 acc.push({
@@ -105,22 +132,32 @@
             return '#ff7f0e';
           });
           if (properties.drawExpectedValue.get()) {
-            total = _(data).map(function(d) {
-              return d.value;
-            }).reduce(function(a, b) {
-              return a + b;
-            });
-            distribution = _(data).map(function(d) {
-              return d.name * d.value / total;
-            });
-            expectedValue = distribution.reduce(function(a, b) {
-              return a + b;
-            });
+            expectedValue = statistics.expectedValue;
+            stnDev = statistics.stnDev;
             $expGEnter = $gEnter.append('g').attr('class', 'exp');
             $expG = $g.select('g.exp').transition().duration(200);
-            $expGEnter.append('line').attr('class', 'exp');
-            expX = x(Math.floor(expectedValue)) + (expectedValue - Math.floor(expectedValue)) * x.rangeBand();
-            $expG.select('line.exp').transition().duration(200).attr('x1', expX).attr('x2', expX).attr('y1', 0).attr('y2', height);
+            realX = function(value) {
+              var min;
+              min = _.min(data.map(function(d) {
+                return d.name;
+              }));
+              if (value < min) {
+                return x(min) - x(-1 * Math.floor(value + min)) - (value + Math.floor(value + min)) * x.rangeBand();
+              } else {
+                return x(Math.floor(value)) + (value - Math.floor(value)) * x.rangeBand();
+              }
+            };
+            addVerticalLine = function(value, className) {
+              var lineX;
+              lineX = realX(value);
+              $expGEnter.append('line').attr('class', className);
+              return $expG.select('line.' + className).transition().duration(200).attr('x1', lineX).attr('x2', lineX).attr('y1', 0).attr('y2', height);
+            };
+            addVerticalLine(expectedValue, "exp");
+            addVerticalLine(expectedValue - stnDev, "leftStnDev");
+            addVerticalLine(expectedValue + stnDev, "rightStnDev");
+            console.log(expectedValue, expectedValue - stnDev, expectedValue + stnDev);
+            console.log(realX(expectedValue), realX(expectedValue - stnDev), realX(expectedValue + stnDev));
           }
           if (!!devMap) {
             $devGEnter = $mainEnter.append('g').attr('class', 'dev');

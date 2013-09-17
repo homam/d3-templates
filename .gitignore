@@ -4,3 +4,4 @@ projectFilesBackup
 .idea/*.iws
 .idea/*space.xml
 .idea/*asks.xml
+node_modules/
