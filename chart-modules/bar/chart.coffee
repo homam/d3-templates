@@ -161,14 +161,35 @@ define ['../common/property'], (Property) ->
             .attr('x1', lineX).attr('x2', lineX)
             .attr('y1', 0).attr('y2', height)
 
+          addHorizontalLine = (value, x1, x2, className) ->
+            lineY = y value
+            $expGEnter.append('line').attr('class', className)
+            $expG.select('line.' + className).transition().duration(200)
+            .attr('x1', realX x1).attr('x2', realX x2)
+            .attr('y1', lineY).attr('y2', lineY)
+            .style("stroke", "black")
+
+
 
           addVerticalLine expectedValue, "exp"
           addVerticalLine (expectedValue - stnDev), "leftStnDev"
           addVerticalLine (expectedValue + stnDev), "rightStnDev"
 
+
           console.log expectedValue,(expectedValue - stnDev), (expectedValue + stnDev)
           console.log realX(expectedValue),realX(expectedValue - stnDev), realX(expectedValue + stnDev)
 
+
+          do ->
+            total = chartData.map((d) ->d.name).reduce (a,b) -> a+b
+            distribution = _(data).map((d) -> d.value * (d.name/total))
+            nameExpectedValue = distribution.reduce (a,b) -> a+b
+            nameVariance = data.map((d) -> Math.pow((d.name-expectedValue),2)*(d.value/total)).reduce((a,b)->a+b)
+            nameStnDev = Math.sqrt variance
+
+            addHorizontalLine nameExpectedValue, (expectedValue - stnDev), (expectedValue + stnDev), "stnDev-hline"
+
+            console.log "total=", total, "e=", nameExpectedValue, "stnDev=", nameStnDev
 
 
 
