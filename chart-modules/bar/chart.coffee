@@ -78,6 +78,7 @@ define ['../common/property'], (Property) ->
 
         statistics = null
         if !!coalescing or properties.drawExpectedValue.get()
+
           total = _(data).map((d) -> d.value).reduce (a,b) -> a+b
           distribution = _(data).map((d) -> d.name * (d.value/total))
           expectedValue = distribution.reduce (a,b) -> a+b
@@ -93,11 +94,11 @@ define ['../common/property'], (Property) ->
         if !!coalescing
           if coalescing < (expectedValue + stnDev)
             coalescing = Math.ceil expectedValue + stnDev
-          chartData = _(data).foldl ((acc, a, i) ->
-            if i <= coalescing
+          chartData = _(data).foldl ((acc, a) ->
+            if a.name <= coalescing
               acc.push({name: a.name, value: a.value})
             else
-              acc[coalescing].value += a.value
+              acc[acc.length-1].value += a.value
             return acc), []
 
 
@@ -148,9 +149,11 @@ define ['../common/property'], (Property) ->
 
 
           realX = (value) ->
+            #debugger
             min = _.min(data.map (d) -> d.name)
             if value < min
-              x(min) - x(-1 * Math.floor value+min) - (value + Math.floor(value+min)) * x.rangeBand()
+              x(min)       #todo: what to do win value < min, the stnDev line will be at the left of the chart
+              # x(min) - x(-1 * Math.floor value+min) - (value + Math.floor(value+min)) * x.rangeBand()
             else
               x(Math.floor value) + (value - Math.floor(value)) * x.rangeBand()
 
@@ -175,10 +178,11 @@ define ['../common/property'], (Property) ->
           addVerticalLine (expectedValue - stnDev), "leftStnDev"
           addVerticalLine (expectedValue + stnDev), "rightStnDev"
 
-
+          #debugger
           console.log expectedValue,(expectedValue - stnDev), (expectedValue + stnDev)
           console.log realX(expectedValue),realX(expectedValue - stnDev), realX(expectedValue + stnDev)
-
+          console.log coalescing
+          console.log "----"
 
           do ->
             total = chartData.map((d) ->d.name).reduce (a,b) -> a+b
@@ -189,7 +193,7 @@ define ['../common/property'], (Property) ->
 
             addHorizontalLine nameExpectedValue, (expectedValue - stnDev), (expectedValue + stnDev), "stnDev-hline"
 
-            console.log "total=", total, "e=", nameExpectedValue, "stnDev=", nameStnDev
+            #console.log "total=", total, "e=", nameExpectedValue, "stnDev=", nameStnDev
 
 
 
