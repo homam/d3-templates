@@ -53,13 +53,15 @@
           return tooltip = value;
         }),
         drawExpectedValue: new Property,
-        coalescing: new Property
+        coalescing: new Property,
+        xAxis: new Property,
+        yAxis: new Property
       };
       properties.width.set(width);
       properties.height.set(height);
       chart = function(selection) {
         return selection.each(function(data) {
-          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, addHorizontalLine, addVerticalLine, chartData, coalescing, distribution, expectedValue, keys, realX, statistics, stnDev, total, variance;
+          var $devG, $devGEnter, $expG, $expGEnter, $g, $gEnter, $main, $mainEnter, $rect, $selection, $svg, $xAxis, $yAxis, addHorizontalLine, addVerticalLine, chartData, coalescing, distribution, expectedValue, keys, realX, statistics, stnDev, total, variance, xAxisProps, yAxisProps;
 
           $selection = d3.select(this);
           chartData = data;
@@ -223,14 +225,21 @@
             }
           });
           $yAxis.transition().duration(200).call(yAxis);
+          xAxisProps = properties.xAxis.get();
+          if (!!xAxisProps) {
+            $gEnter.append("text").attr("class", "x label");
+            $g.select('text.x.label').attr("text-anchor", "end").attr("x", width).attr("y", height + margin.bottom).text(xAxisProps.text).attr("dy", xAxisProps.dy || 0);
+          }
+          yAxisProps = properties.yAxis.get();
+          if (!!yAxisProps) {
+            $gEnter.append("text").attr("class", "y label");
+            $g.select('text.y.label').attr("text-anchor", "end").attr("y", 0 - margin.left).attr("dy", yAxisProps.dy || 0).attr("transform", "rotate(-90)").text(yAxisProps.text);
+          }
           return null;
         });
       };
       null;
       chart = Property.expose(chart, properties);
-      chart.mouseover = function(handler) {
-        return dispatch.on('mouseover', handler);
-      };
       return chart;
     };
   });

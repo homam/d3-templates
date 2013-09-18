@@ -61,7 +61,15 @@ define ['../common/property'], (Property) ->
 
       # number, used in histograms
       coalescing: new Property
+
+      # {text, dy}
+      xAxis: new Property
+
+      # {text, dy}
+      yAxis: new Property
+
     }
+
 
     properties.width.set(width)
     properties.height.set(height)
@@ -100,6 +108,7 @@ define ['../common/property'], (Property) ->
             else
               acc[acc.length-1].value += a.value
             return acc), []
+
 
 
         $svg = $selection.selectAll('svg').data([chartData])
@@ -193,9 +202,6 @@ define ['../common/property'], (Property) ->
 
             addHorizontalLine nameExpectedValue, (expectedValue - stnDev), (expectedValue + stnDev), "stnDev-hline"
 
-            #console.log "total=", total, "e=", nameExpectedValue, "stnDev=", nameStnDev
-
-
 
         # deviation lines
         if !!devMap
@@ -225,7 +231,6 @@ define ['../common/property'], (Property) ->
 
 
 
-
         $main.exit().select('rect').attr('y', 0).attr('height', 0)
 
 
@@ -237,6 +242,26 @@ define ['../common/property'], (Property) ->
         #.style("text-anchor", "end").style("font-size", "10px").attr("dx", "2em").attr("transform", "rotate(0)")
         $yAxis.transition().duration(200).call(yAxis)
 
+        #xAxis label
+        xAxisProps = properties.xAxis.get()
+        if !!xAxisProps
+          $gEnter.append("text").attr("class", "x label")
+          $g.select('text.x.label').attr("text-anchor", "end")
+          .attr("x", width)
+          .attr("y", height + margin.bottom )
+          .text(xAxisProps.text).attr("dy",(xAxisProps.dy || 0));
+
+        #yAxis label
+        yAxisProps = properties.yAxis.get()
+        if !!yAxisProps
+          $gEnter.append("text").attr("class", "y label")
+          $g.select('text.y.label').attr("text-anchor", "end")
+          #.attr("x", 0 - margin.left)
+          .attr("y", 0 - margin.left)
+          .attr("dy", yAxisProps.dy || 0)
+          .attr("transform", "rotate(-90)")
+          .text(yAxisProps.text);
+
         null # selection.each()
     null # chart()
 
@@ -246,6 +271,6 @@ define ['../common/property'], (Property) ->
     # expose the properties
 
     chart = Property.expose(chart, properties)
-    chart.mouseover = (handler) -> dispatch.on('mouseover', handler)
+    #chart.mouseover = (handler) -> dispatch.on('mouseover', handler)
 
     return chart
