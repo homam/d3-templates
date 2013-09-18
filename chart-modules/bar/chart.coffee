@@ -19,7 +19,7 @@ define ['../common/property'], (Property) ->
     yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','))
 
 
-    formatPercent = d3.format('.1p')
+    formatPercent = d3.format('.2p')
 
     nameMap = (d) ->d.name
     valueMap  = (d) ->d.value
@@ -144,6 +144,7 @@ define ['../common/property'], (Property) ->
 
         $rect = $main.select('rect')
         $rect.transition().duration(200).attr('width', x.rangeBand())
+        .attr('class', nameMap)
         .attr('x', (d) -> x(nameMap(d)))
         .attr('y', (d) -> y(valueMap(d)))
         .attr('height', (d)-> height-y(valueMap(d)))
@@ -156,8 +157,14 @@ define ['../common/property'], (Property) ->
           $mainEnter.append('text').attr('class','percentage')
           $main.select('text.percentage')
           .attr('x', (d) -> x(nameMap(d)) + x.rangeBand()/2)
-          .attr('y', height-(height*.15))
+          .attr('y', height-(height*.10))
           .text((d) -> formatPercent valueMap(d) / total)
+          .style("text-anchor", "middle")
+          $mainEnter.append('text').attr('class','percentage-step')
+          $main.select('text.percentage-step')
+          .attr('x', (d) -> x(nameMap(d)) + x.rangeBand()/2)
+          .attr('y', height-(height*.25))
+          .text((d,i) -> if i >0 then (formatPercent valueMap(d) / valueMap(data[i-1])) else "")
           .style("text-anchor", "middle")
 
 

@@ -16,7 +16,7 @@
       y = d3.scale.linear();
       xAxis = d3.svg.axis().scale(x).orient('bottom');
       yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','));
-      formatPercent = d3.format('.1p');
+      formatPercent = d3.format('.2p');
       nameMap = function(d) {
         return d.name;
       };
@@ -128,7 +128,7 @@
             return dispatch.mouseout(d);
           }).call(tooltip);
           $rect = $main.select('rect');
-          $rect.transition().duration(200).attr('width', x.rangeBand()).attr('x', function(d) {
+          $rect.transition().duration(200).attr('width', x.rangeBand()).attr('class', nameMap).attr('x', function(d) {
             return x(nameMap(d));
           }).attr('y', function(d) {
             return y(valueMap(d));
@@ -142,8 +142,18 @@
             $mainEnter.append('text').attr('class', 'percentage');
             $main.select('text.percentage').attr('x', function(d) {
               return x(nameMap(d)) + x.rangeBand() / 2;
-            }).attr('y', height - (height * .15)).text(function(d) {
+            }).attr('y', height - (height * .10)).text(function(d) {
               return formatPercent(valueMap(d) / total);
+            }).style("text-anchor", "middle");
+            $mainEnter.append('text').attr('class', 'percentage-step');
+            $main.select('text.percentage-step').attr('x', function(d) {
+              return x(nameMap(d)) + x.rangeBand() / 2;
+            }).attr('y', height - (height * .25)).text(function(d, i) {
+              if (i > 0) {
+                return formatPercent(valueMap(d) / valueMap(data[i - 1]));
+              } else {
+                return "";
+              }
             }).style("text-anchor", "middle");
           }
           if (properties.drawExpectedValue.get()) {

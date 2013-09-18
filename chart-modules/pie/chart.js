@@ -18,7 +18,7 @@
       };
       legend = true;
       formatNumber = d3.format(',f');
-      formatPercent = d3.format('.1p');
+      formatPercent = d3.format('.2p');
       arc = d3.svg.arc().outerRadius(radius).innerRadius(0);
       pie = d3.layout.pie().sort(null).value(valueMap);
       properties = {
@@ -68,7 +68,7 @@
           $arc.select('path').style("fill", function(d) {
             return color(nameMap(d.data));
           });
-          total = $arc.data().map(function(d) {
+          total = data.map(function(d) {
             return valueMap(d);
           }).reduce(function(a, b) {
             return a + b;
@@ -77,7 +77,7 @@
           $arc.select('text').attr("transform", function(d) {
             return "translate(" + arc.centroid(d) + ")";
           }).attr("dy", ".35em").style("text-anchor", "middle").text(function(d) {
-            return formatNumber(valueMap(d.data)) + " (" + formatPercent(valueMap(d) / total) + ")";
+            return formatNumber(valueMap(d)) + " (" + formatPercent(valueMap(d) / total) + ")";
           });
           if (legend) {
             $gEnter.append('g').attr('class', 'legend');
