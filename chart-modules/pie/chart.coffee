@@ -17,6 +17,7 @@ define ['../common/property'], (Property) ->
     #color = d3.scale.category10()
 
     formatNumber = d3.format(',f')
+    formatPercent = d3.format('.1p')
 
     arc = d3.svg.arc()
     .outerRadius(radius).innerRadius(0);
@@ -79,12 +80,13 @@ define ['../common/property'], (Property) ->
         $arc.select('path').style("fill", (d) -> color(nameMap(d.data)));
 
 
-        total = $arc.data().reduce (a,b) -> {value:valueMap(a)+valueMap(b)};
+        total = $arc.data().map((d) -> valueMap(d)).reduce (a,b) -> a+b
         $arcEnter.append("text")
         $arc.select('text').attr("transform", (d) -> "translate(" + arc.centroid(d) + ")")
         .attr("dy", ".35em")
         .style("text-anchor", "middle")
-        .text((d) -> formatNumber(valueMap(d.data)) + " (" + (valueMap(d) * 100/ valueMap total).toFixed(2).toString() + "%)");
+        .text((d) -> formatNumber(valueMap(d.data)) + " (" +
+          formatPercent(valueMap(d) /  total) + ")");
 
         if legend
           $gEnter.append('g').attr('class','legend')
