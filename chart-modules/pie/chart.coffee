@@ -70,7 +70,7 @@ define ['../common/property'], (Property) ->
         $g = $svg.select('g').attr('transform', "translate(" + width / 2 + "," + height / 2 + ")")
 
         $arc = $g.selectAll(".arc").data(pie(data))
-        $arcEnter =$arc.enter().append("g")
+        $arcEnter = $arc.enter().append("g")
         $arc.attr("class", (d) ->
           "arc " + nameMap(d.data));
 
@@ -79,12 +79,12 @@ define ['../common/property'], (Property) ->
         $arc.select('path').style("fill", (d) -> color(nameMap(d.data)));
 
 
+        total = $arc.data().reduce (a,b) -> {value:valueMap(a)+valueMap(b)};
         $arcEnter.append("text")
         $arc.select('text').attr("transform", (d) -> "translate(" + arc.centroid(d) + ")")
         .attr("dy", ".35em")
         .style("text-anchor", "middle")
-        .text((d) -> formatNumber valueMap(d.data));
-
+        .text((d) -> formatNumber(valueMap(d.data)) + " (" + (valueMap(d) * 100/ valueMap total).toFixed(2).toString() + "%)");
 
         if legend
           $gEnter.append('g').attr('class','legend')
