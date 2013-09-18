@@ -2,7 +2,7 @@
 (function() {
   define(['../common/property'], function(Property) {
     return function() {
-      var chart, devMap, dispatch, height, margin, nameMap, properties, tooltip, valueMap, width, x, xAxis, y, yAxis;
+      var chart, devMap, dispatch, formatPercent, height, margin, nameMap, properties, tooltip, valueMap, width, x, xAxis, y, yAxis;
 
       margin = {
         top: 20,
@@ -16,6 +16,7 @@
       y = d3.scale.linear();
       xAxis = d3.svg.axis().scale(x).orient('bottom');
       yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','));
+      formatPercent = d3.format('.1p');
       nameMap = function(d) {
         return d.name;
       };
@@ -52,6 +53,7 @@
         tooltip: new Property(function(value) {
           return tooltip = value;
         }),
+        funnel: new Property,
         drawExpectedValue: new Property,
         coalescing: new Property,
         xAxis: new Property,
@@ -135,6 +137,15 @@
           }).style('fill', function(d, i) {
             return '#ff7f0e';
           });
+          if (!!properties.funnel.get()) {
+            total = data.map(valueMap)[0];
+            $mainEnter.append('text').attr('class', 'percentage');
+            $main.select('text.percentage').attr('x', function(d) {
+              return x(nameMap(d)) + x.rangeBand() / 2;
+            }).attr('y', height - (height * .15)).text(function(d) {
+              return formatPercent(valueMap(d) / total);
+            }).style("text-anchor", "middle");
+          }
           if (properties.drawExpectedValue.get()) {
             expectedValue = statistics.expectedValue;
             stnDev = statistics.stnDev;

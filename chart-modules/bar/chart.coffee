@@ -19,6 +19,7 @@ define ['../common/property'], (Property) ->
     yAxis = d3.svg.axis().scale(y).orient('left').tickFormat(d3.format(','))
 
 
+    formatPercent = d3.format('.1p')
 
     nameMap = (d) ->d.name
     valueMap  = (d) ->d.value
@@ -55,6 +56,8 @@ define ['../common/property'], (Property) ->
       devs : new Property (value) -> devMap = value
 
       tooltip : new Property (value) -> tooltip = value
+
+      funnel : new Property
 
       # numebr, used in histograms
       drawExpectedValue: new Property
@@ -145,6 +148,17 @@ define ['../common/property'], (Property) ->
         .attr('y', (d) -> y(valueMap(d)))
         .attr('height', (d)-> height-y(valueMap(d)))
         .style('fill', (d,i)-> '#ff7f0e')
+
+
+        # in funnels
+        if !!properties.funnel.get()
+          total = data.map(valueMap)[0]
+          $mainEnter.append('text').attr('class','percentage')
+          $main.select('text.percentage')
+          .attr('x', (d) -> x(nameMap(d)) + x.rangeBand()/2)
+          .attr('y', height-(height*.15))
+          .text((d) -> formatPercent valueMap(d) / total)
+          .style("text-anchor", "middle")
 
 
         # in histograms
