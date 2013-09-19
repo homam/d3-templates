@@ -157,7 +157,7 @@
               if (i > 0) {
                 return formatPercent(valueMap(d) / valueMap(data[i - 1]));
               } else {
-                return "of Last Step";
+                return "of Prev Step";
               }
             }).style("text-anchor", "middle");
           }

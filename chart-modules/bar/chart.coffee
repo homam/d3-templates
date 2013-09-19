@@ -167,7 +167,7 @@ define ['../common/property'], (Property) ->
           .attr('x', (d) -> x(nameMap(d)) + x.rangeBand()/2)
           #.attr('y', height-(height*.25))
           .attr('y', height+margin.bottom-40)
-          .text((d,i) -> if i >0 then (formatPercent valueMap(d) / valueMap(data[i-1])) else "of Last Step")
+          .text((d,i) -> if i >0 then (formatPercent valueMap(d) / valueMap(data[i-1])) else "of Prev Step")
           .style("text-anchor", "middle")
 
 
